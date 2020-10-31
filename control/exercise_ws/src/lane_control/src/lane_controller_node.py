@@ -32,7 +32,8 @@ class LaneControllerNode(DTROS):
 
         # Add the node parameters to the parameters dictionary
         self.params = dict()
-        self.pp_controller = PurePursuitLaneController(la_dist=0.2, d=0, phi=0, v_ref=0.22)
+        self.pp_controller = PurePursuitLaneController(la_dist=0.20, d=0, phi=0 , v_ref=0.3)
+        #PurePursuitLaneController(la_dist=0.2, d=0, phi=0, v_ref=0.22)
         #sim PurePursuitLaneController(la_dist=0.20, d=0, phi=0, gain = 0.3, v_ref=0.3)
         # Construct publishers
         self.pub_car_cmd = rospy.Publisher("~car_cmd",
@@ -54,6 +55,7 @@ class LaneControllerNode(DTROS):
 
         self.log("Initialized!")
 
+        #self.slow_lambda = rospy.get_param("~slow_lambda")
 
     def cbLineSeg(self, input_segments):
         #print(input_segments.segments)
@@ -72,10 +74,9 @@ class LaneControllerNode(DTROS):
 
         # TODO This needs to get changed
         self.cbParametersChanged()
-        car_control_msg.v, car_control_msg.omega = self.pp_controller.calculate_speed() #get_angular_velocity(self.pp_controller.la)
+        car_control_msg.v, car_control_msg.omega = self.pp_controller.calculate_speed() 
         if self.pp_controller.slow:
-            car_control_msg.v = 0.7 * car_control_msg.v
-        #print(car_control_msg.omega)
+            car_control_msg.v = 0.8 * car_control_msg.v
         self.publishCmd(car_control_msg)
 
 
