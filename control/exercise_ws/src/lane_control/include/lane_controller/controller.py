@@ -67,10 +67,10 @@ class PurePursuitLaneController:
         if segment.color == 0:  #white
             x, y = - dy / norm, dx / norm
             if np.abs(x) > np.cos(np.deg2rad(self.thresh_angle)):
-                return([10, 0])
+                return([20, 0])
         elif segment.color == 1:
             x, y = dy / norm, -dx / norm
-            if np.abs(x) > np.cos(np.deg2rad(self.thresh_angle*2)):
+            if np.abs(x) > np.cos(np.deg2rad(self.thresh_angle)):
                 return([-20, 0])
         else:
             x, y = 0,0
