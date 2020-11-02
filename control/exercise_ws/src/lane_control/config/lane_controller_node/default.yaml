@@ -1,3 +1,7 @@
 #lane_control/lane_controller_node
 
 ## ADD CONFIGS HERE
+la_dist: 0.25
+d: 0
+phi: 0
+v_ref: 0.25

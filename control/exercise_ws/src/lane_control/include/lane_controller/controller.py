@@ -27,6 +27,7 @@ class PurePursuitLaneController:
         self.tol = 0.05    
         self.max_dist = 0.35
         self.slow = False
+        self.max_seg = 6
   
 # ---------------------------
 # ----- GET LANE CENTER -----
@@ -67,21 +68,17 @@ class PurePursuitLaneController:
         if segment.color == 0:  #white
             x, y = - dy / norm, dx / norm
             if np.abs(x) > np.cos(np.deg2rad(self.thresh_angle)):
-                return([20, 0])
+                return([0, 0.25])
         elif segment.color == 1:
             x, y = dy / norm, -dx / norm
             if np.abs(x) > np.cos(np.deg2rad(self.thresh_angle)):
-                return([-20, 0])
+                return([0, -0.25])
         else:
             x, y = 0,0
-        #if self.emergency_turn(x, segment.color,  angle=15) == -1 : #white
-        #    return([-100,1])
-        #if self.emergency_turn(x, segment.color, angle=15) == 1:
-         #   return([-100,-1])
-        # Compute the lane center using the normal vector, first point, and the lane size
+      
         lane_center_x = point_1.x + x * (self.lane_width / 2)
         lane_center_y = point_1.y + y * (self.lane_width / 2)
-        return ([lane_center_x, lane_center_y])#, vmult, omega)
+        return ([lane_center_x, lane_center_y])
     
     def get_lookahead(self, segment_list, dist):
         """[summary]
@@ -111,9 +108,9 @@ class PurePursuitLaneController:
                 self.slow = True
                 return(self.get_lc_from_lane_pose(dist))#self.get_lc_from_lane_pose(dist))
           
-            dists = [np.abs(d - self.la_dist) for d in dists]
+            dists = [(d - self.la_dist) for d in dists]
             indices = np.argsort(dists)
-            keep = [coords[i] for i in indices] #[:min(len(coords),self.max_seg)]]
+            keep = [coords[i] for i in indices[:min(len(coords),self.max_seg)]]
             self.slow = False
             return (np.mean([coord[0] for coord in keep]), np.mean([coord[1] for coord in keep]))
             #else: 
@@ -195,7 +192,7 @@ class PurePursuitLaneController:
         x_la, y_la = la_coords
         L =  np.sqrt(x_la** 2 + y_la ** 2)
         sin_alpha = y_la / np.sqrt(x_la** 2 + y_la ** 2)
-        omega = sin_alpha *1.8*self.v_ref/ L #sin_alpha *1.5*self.v_ref/ L for sim
+        omega = sin_alpha *1.5*self.v_ref/ L #sin_alpha *1.5*self.v_ref/ L for sim
 
         return omega
     

@@ -32,7 +32,11 @@ class LaneControllerNode(DTROS):
 
         # Add the node parameters to the parameters dictionary
         self.params = dict()
-        self.pp_controller = PurePursuitLaneController(la_dist=0.20, d=0, phi=0 , v_ref=0.3)
+        la_dist = rospy.get_param("~la_dist", None)
+        d = rospy.get_param("~d", None)
+        phi = rospy.get_param("~phi", None)
+        v_ref = rospy.get_param("~v_ref", None)
+        self.pp_controller = PurePursuitLaneController(la_dist, d, phi, v_ref)
         #PurePursuitLaneController(la_dist=0.2, d=0, phi=0, v_ref=0.22)
         #sim PurePursuitLaneController(la_dist=0.20, d=0, phi=0, gain = 0.3, v_ref=0.3)
         # Construct publishers
@@ -55,7 +59,7 @@ class LaneControllerNode(DTROS):
 
         self.log("Initialized!")
 
-        #self.slow_lambda = rospy.get_param("~slow_lambda")
+        
 
     def cbLineSeg(self, input_segments):
         #print(input_segments.segments)
