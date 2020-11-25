@@ -2,7 +2,14 @@
 
 import rospy
 from duckietown.dtros import DTROS, NodeType, TopicType
-from duckietown_msgs.msg import SegmentList, LanePose, BoolStamped, Twist2DStamped, FSMState, WheelEncoderStamped
+from duckietown_msgs.msg import (
+    SegmentList,
+    LanePose,
+    BoolStamped,
+    Twist2DStamped,
+    FSMState,
+    WheelEncoderStamped,
+)
 from lane_filter import LaneFilterHistogramKF
 from sensor_msgs.msg import Image
 import os
@@ -39,62 +46,68 @@ class LaneFilterNode(DTROS):
 
     def __init__(self, node_name):
         super(LaneFilterNode, self).__init__(
-            node_name=node_name,
-            node_type=NodeType.PERCEPTION
+            node_name=node_name, node_type=NodeType.PERCEPTION
         )
 
         veh = os.getenv("VEHICLE_NAME")
 
-        self._filter = rospy.get_param('~lane_filter_histogram_kf_configuration', None)
-        self._debug = rospy.get_param('~debug', False)
-        self._predict_freq = rospy.get_param('~predict_frequency', 30.0)
+        self._filter = rospy.get_param("~lane_filter_histogram_kf_configuration", None)
+        self._debug = rospy.get_param("~debug", False)
+        self._predict_freq = rospy.get_param("~predict_frequency", 30.0)
 
         # Create the filter
         self.filter = LaneFilterHistogramKF(**self._filter)
         self.t_last_update = rospy.get_time()
         self.last_update_stamp = self.t_last_update
 
-        self.filter.wheel_radius = rospy.get_param(f"/{veh}/kinematics_node/radius")
-
+        self.filter.wheel_radius = rospy.get_param(
+            f"/{veh}/kinematics_node/radius", None
+        )
+        self.filter.baseline = rospy.get_param(f"/{veh}/kinematics_node/baseline", None)
         # Subscribers
-        self.sub_segment_list = rospy.Subscriber("~segment_list",
-                                    SegmentList,
-                                    self.cbProcessSegments,
-                                    queue_size=1)
+        self.sub_segment_list = rospy.Subscriber(
+            "~segment_list", SegmentList, self.cbProcessSegments, queue_size=1
+        )
 
-        self.sub_encoder_left = rospy.Subscriber("~left_wheel_encoder_node/tick",
-                                                 WheelEncoderStamped,
-                                                 self.cbProcessLeftEncoder,
-                                                 queue_size=1)
+        self.sub_encoder_left = rospy.Subscriber(
+            "~left_wheel_encoder_node/tick",
+            WheelEncoderStamped,
+            self.cbProcessLeftEncoder,
+            queue_size=1,
+        )
 
-        self.sub_encoder_right = rospy.Subscriber("~right_wheel_encoder_node/tick",
-                                                 WheelEncoderStamped,
-                                                 self.cbProcessRightEncoder,
-                                                 queue_size=1)
-
+        self.sub_encoder_right = rospy.Subscriber(
+            "~right_wheel_encoder_node/tick",
+            WheelEncoderStamped,
+            self.cbProcessRightEncoder,
+            queue_size=1,
+        )
 
         # Publishers
-        self.pub_lane_pose = rospy.Publisher("~lane_pose",
-                                             LanePose,
-                                             queue_size=1,
-                                             dt_topic_type=TopicType.PERCEPTION)
+        self.pub_lane_pose = rospy.Publisher(
+            "~lane_pose", LanePose, queue_size=1, dt_topic_type=TopicType.PERCEPTION
+        )
 
-        self.pub_ml_img = rospy.Publisher("~measurement_likelihood_img",
-                                              Image,
-                                              queue_size=1,
-                                              dt_topic_type=TopicType.DEBUG)
+        self.pub_ml_img = rospy.Publisher(
+            "~measurement_likelihood_img",
+            Image,
+            queue_size=1,
+            dt_topic_type=TopicType.DEBUG,
+        )
 
-        self.pub_seglist_filtered = rospy.Publisher("~seglist_filtered",
-                                                    SegmentList,
-                                                    queue_size=1,
-                                                    dt_topic_type=TopicType.DEBUG)
+        self.pub_seglist_filtered = rospy.Publisher(
+            "~seglist_filtered",
+            SegmentList,
+            queue_size=1,
+            dt_topic_type=TopicType.DEBUG,
+        )
 
         self.right_encoder_ticks = 0
         self.left_encoder_ticks = 0
         self.right_encoder_ticks_delta = 0
         self.left_encoder_ticks_delta = 0
         # Set up a timer for prediction (if we got encoder data) since that data can come very quickly
-        rospy.Timer(rospy.Duration(1/self._predict_freq), self.cbPredict)
+        rospy.Timer(rospy.Duration(1 / self._predict_freq), self.cbPredict)
 
         self.bridge = CvBridge()
 
@@ -108,9 +121,11 @@ class LaneFilterNode(DTROS):
         if not self.filter.initialized:
             self.filter.encoder_resolution = right_encoder_msg.resolution
             self.filter.initialized = True
-        self.right_encoder_ticks_delta = right_encoder_msg.data - self.right_encoder_ticks
+        self.right_encoder_ticks_delta = (
+            right_encoder_msg.data - self.right_encoder_ticks
+        )
 
-    def cbPredict(self,event):
+    def cbPredict(self, event):
         current_time = rospy.get_time()
         dt = current_time - self.t_last_update
         self.t_last_update = current_time
@@ -119,14 +134,15 @@ class LaneFilterNode(DTROS):
         if self.right_encoder_ticks_delta == 0 and self.left_encoder_ticks_delta == 0:
             return
 
-        self.filter.predict(dt, self.left_encoder_ticks_delta, self.right_encoder_ticks_delta)
+        self.filter.predict(
+            dt, self.left_encoder_ticks_delta, self.right_encoder_ticks_delta
+        )
         self.left_encoder_ticks += self.left_encoder_ticks_delta
         self.right_encoder_ticks += self.right_encoder_ticks_delta
         self.left_encoder_ticks_delta = 0
         self.right_encoder_ticks_delta = 0
 
         self.publishEstimate()
-
 
     def cbProcessSegments(self, segment_list_msg):
         """Callback to process the segments
@@ -146,7 +162,6 @@ class LaneFilterNode(DTROS):
 
         self.publishEstimate(segment_list_msg)
 
-
     def publishEstimate(self, segment_list_msg=None):
 
         belief = self.filter.getEstimate()
@@ -154,14 +169,22 @@ class LaneFilterNode(DTROS):
         # build lane pose message to send
         lanePose = LanePose()
         lanePose.header.stamp = self.last_update_stamp
-        lanePose.d = belief['mean'][0]
-        lanePose.phi = belief['mean'][1]
-        lanePose.d_phi_covariance = [belief['covariance'][0][0],
-                                     belief['covariance'][0][1],
-                                     belief['covariance'][1][0],
-                                     belief['covariance'][1][1]]
+        lanePose.d = belief["mean"][0]
+        lanePose.phi = belief["mean"][1]
+        lanePose.d_phi_covariance = [
+            belief["covariance"][0][0],
+            belief["covariance"][0][1],
+            belief["covariance"][1][0],
+            belief["covariance"][1][1],
+        ]
         lanePose.in_lane = True
         lanePose.status = lanePose.NORMAL
+        print(
+            lanePose.d,
+            lanePose.phi,
+            lanePose.d_phi_covariance[0],
+            lanePose.d_phi_covariance[3],
+        )
 
         self.pub_lane_pose.publish(lanePose)
         if segment_list_msg is not None:
@@ -179,9 +202,9 @@ class LaneFilterNode(DTROS):
         if self._debug:
 
             # Get the segments that agree with the best estimate and publish them
-            inlier_segments = self.filter.get_inlier_segments(segment_list_msg.segments,
-                                                              d_max,
-                                                              phi_max)
+            inlier_segments = self.filter.get_inlier_segments(
+                segment_list_msg.segments, d_max, phi_max
+            )
             inlier_segments_msg = SegmentList()
             inlier_segments_msg.header = segment_list_msg.header
             inlier_segments_msg.segments = inlier_segments
@@ -192,10 +215,10 @@ class LaneFilterNode(DTROS):
             ml = self.filter.generate_measurement_likelihood(segment_list_msg.segments)
             if ml is not None:
                 ml_img = self.bridge.cv2_to_imgmsg(
-                    np.array(255 * ml).astype("uint8"), "mono8")
+                    np.array(255 * ml).astype("uint8"), "mono8"
+                )
                 ml_img.header.stamp = segment_list_msg.header.stamp
                 self.pub_ml_img.publish(ml_img)
-
 
     def cbMode(self, msg):
         return  # TODO adjust self.active
@@ -204,9 +227,9 @@ class LaneFilterNode(DTROS):
         self.currentVelocity = twist_msg
 
     def loginfo(self, s):
-        rospy.loginfo('[%s] %s' % (self.node_name, s))
+        rospy.loginfo("[%s] %s" % (self.node_name, s))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     lane_filter_node = LaneFilterNode(node_name="lane_filter_node")
     rospy.spin()
