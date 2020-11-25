@@ -60,10 +60,9 @@ class LaneFilterNode(DTROS):
         self.t_last_update = rospy.get_time()
         self.last_update_stamp = self.t_last_update
 
-        self.filter.wheel_radius = rospy.get_param(
-            f"/{veh}/kinematics_node/radius", None
-        )
-        self.filter.baseline = rospy.get_param(f"/{veh}/kinematics_node/baseline", None)
+        self.filter.wheel_radius = rospy.get_param(f"/{veh}/kinematics_node/radius")
+        self.filter.baseline = rospy.get_param(f"/{veh}/kinematics_node/baseline")
+
         # Subscribers
         self.sub_segment_list = rospy.Subscriber(
             "~segment_list", SegmentList, self.cbProcessSegments, queue_size=1
@@ -81,6 +80,9 @@ class LaneFilterNode(DTROS):
             WheelEncoderStamped,
             self.cbProcessRightEncoder,
             queue_size=1,
+        )
+        self.sub_episode_start = rospy.Subscriber(
+            f"episode_start", BoolStamped, self.cbEpisodeStart, queue_size=1
         )
 
         # Publishers
@@ -110,6 +112,11 @@ class LaneFilterNode(DTROS):
         rospy.Timer(rospy.Duration(1 / self._predict_freq), self.cbPredict)
 
         self.bridge = CvBridge()
+
+    def cbEpisodeStart(self, msg):
+        rospy.loginfo("Lane Filter Resetting")
+        if msg.data:
+            self.filter.reset()
 
     def cbProcessLeftEncoder(self, left_encoder_msg):
         if not self.filter.initialized:
