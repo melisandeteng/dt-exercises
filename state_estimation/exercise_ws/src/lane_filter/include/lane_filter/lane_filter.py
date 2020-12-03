@@ -50,6 +50,8 @@ class LaneFilterHistogramKF:
             assert p_name in kwargs
             setattr(self, p_name, kwargs[p_name])
 
+        self.mean_0 = [self.mean_d_0, self.mean_phi_0]
+        self.cov_0 = [[self.sigma_d_0, 0], [0, self.sigma_phi_0]]
         self.belief = {"mean": self.mean_0, "covariance": self.cov_0}
 
         self.encoder_resolution = 0
@@ -98,7 +100,7 @@ class LaneFilterHistogramKF:
         # print("predicted mean", predicted_mu)
         # print("predicted cov", predicted_cov)
         self.belief["mean"] = mu_pred
-        self.belief["covariance"] = self.belief["covariance"]  # + cov_pred
+        self.belief["covariance"] = self.belief["covariance"] + cov_pred
 
     def update(self, segments):
         # prepare the segments for each belief array
@@ -128,8 +130,10 @@ class LaneFilterHistogramKF:
 
         margin_d = measurement_likelihood.sum(axis=1)
         margin_phi = measurement_likelihood.sum(axis=0)
-        d_mean = self.d_min + i_max * self.delta_d  # np.multiply(d, margin_d).sum()
-        phi_mean = self.phi_min + j_max * self.delta_phi  # this takes max
+        d_mean = (
+            self.d_min + (i_max + 0.5) * self.delta_d
+        )  # np.multiply(d, margin_d).sum()
+        phi_mean = self.phi_min + (j_max + 0.5) * self.delta_phi  # this takes max
         # np.multiply(phi, margin_phi).sum() #this takes expectation
         pred_state = np.array([d_mean, phi_mean])
         cov_d_phi = np.multiply(
@@ -147,8 +151,7 @@ class LaneFilterHistogramKF:
             / (len(margin_phi) - 1)
         )
         R = np.array([[var_d, cov_d_phi], [cov_d_phi, var_phi]])
-        print("RRR")
-        print(self.belief["mean"], var_d, var_phi)
+
         # TODO: Apply the update equations for the Kalman Filter to self.belief
         residual_cov = H @ cov_prev @ H.T + R
         try:
