@@ -8,7 +8,7 @@ from utils import launch_env, seed, makedirs, display_seg_mask, display_img_seg_
 import cv2
 from PIL import Image
 
-DATASET_DIR = "../dataset_test_numpy2"
+DATASET_DIR = "../dataset_duckietown_vf"
 
 npz_index = 0
 
@@ -29,7 +29,7 @@ def remove_small_comps(im):
     img2 = np.zeros((labels.shape), np.uint8)
 
     for i in range(0, nlabels - 1):
-        if sizes[i] >= 30:  # filter small dotted regions
+        if sizes[i] >= 50:  # filter small dotted regions
             img2[labels == i + 1] = 255
     return img2
 
