@@ -170,8 +170,8 @@ def main():
         lr_scheduler.step()
         print(epoch)
         save(model, optimizer, "./models/", epoch, save_n_epochs=2)
-    
-        evaluate(model, data_loader_test, device, epoch + 1)
+        #didn't use
+        #evaluate(model, data_loader_test, device, epoch + 1)
 
 if __name__ == "__main__":
     main()
