@@ -126,7 +126,7 @@ environment = launch_env()
 
 policy = PurePursuitPolicy(environment)
 
-MAX_STEPS = 500
+MAX_STEPS = 6400
 
 while True:
     obs = environment.reset()
