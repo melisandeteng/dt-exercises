@@ -55,7 +55,7 @@ class Wrapper:
         image = torch.from_numpy(np.transpose(batch_or_image, (2, 0, 1))).to(
             self.device
         )
-        print(image.unsqueeze(0).shape)
+        image = image / 255
         try:
             box, label, score = self.model(
                 image.unsqueeze(0)
