@@ -120,7 +120,7 @@ class ObjectDetectionNode(DTROS):
             center = x1 + (x2 - x1) / 2
 
             # TODO if label isn't a duckie, skip
-            if label != 1:
+            if classes[i] != 1:
                 continue
             else:
                 # keep big objects at 45 deg fov
