@@ -48,6 +48,7 @@ class Wrapper:
         # TODO second is the corresponding labels, the third is the scores (the probabilities)
 
         # See this pseudocode for inspiration
+        # See this pseudocode for inspiration
         boxes = []
         labels = []
         scores = []
@@ -55,11 +56,15 @@ class Wrapper:
         image = torch.from_numpy(np.transpose(batch_or_image, (2, 0, 1))).to(
             self.device
         )
-        image = image / 255
+        image = (image / 255).type(torch.FloatTensor)
         try:
-            box, label, score = self.model(
-                image.unsqueeze(0)
-            )  # TODO you probably need to send the image to a tensor, etc.
+
+            out = self.model(image.unsqueeze(0))[
+                0
+            ]  # TODO you probably need to send the image to a tensor, etc.
+            box = out["boxes"]
+            label = out["labels"]
+            score = out["scores"]
         except:
             box = []
             label = []
